@@ -5,6 +5,14 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
+    "fastmcp>=0.4.1",
     "aiohttp>=3.11.10",
     "webuiapi>=0.9.16",
 ]
+
+[project.scripts]
+sd-chat = "sd_chat:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
