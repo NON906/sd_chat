@@ -32,14 +32,13 @@ class SDAPI_WebUI:
                 denoising_strength=checkpoint_settings.denoising_strength,
                 use_async=True,
             )
-            if self.save_dir_path is not None:
-                os.makedirs(os.path.join(self.save_dir_path, "txt2img"), exist_ok=True)
-                index = 0
+            if self.save_dir_path is None:
+                self.save_dir_path = "sd_chat"
+            os.makedirs(os.path.join(self.save_dir_path, "txt2img"), exist_ok=True)
+            index = 0
+            save_path = os.path.join(self.save_dir_path, "txt2img", f'{index:08}.png')
+            while os.path.exists(save_path):
+                index += 1
                 save_path = os.path.join(self.save_dir_path, "txt2img", f'{index:08}.png')
-                while os.path.exists(save_path):
-                    index += 1
-                    save_path = os.path.join(self.save_dir_path, "txt2img", f'{index:08}.png')
-                result.image.save(save_path)
-            img_bytes = io.BytesIO()
-            result.image.save(img_bytes, format='PNG')
-            return img_bytes.getvalue()
+            result.image.save(save_path)
+            return os.path.abspath(save_path)
