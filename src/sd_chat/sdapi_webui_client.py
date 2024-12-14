@@ -5,7 +5,7 @@ import io
 
 from .settings import CheckPointSettings
 
-class SDAPI_WebUI:
+class SDAPI_WebUIClient:
     def __init__(self, save_dir_path: str | None = None):
         with redirect_stdout(open(os.devnull, 'w')):
             self.api = webuiapi.WebUIApi()
@@ -13,7 +13,7 @@ class SDAPI_WebUI:
 
     async def txt2img(self, prompt: str, checkpoint_settings: CheckPointSettings):
         with redirect_stdout(open(os.devnull, 'w')):
-            if self.api.util_get_current_model() != checkpoint_settings.name:
+            if checkpoint_settings.name in self.api.util_get_current_model():
                 self.api.util_set_model(checkpoint_settings.name)
                 self.api.util_wait_for_ready()
             result = await self.api.txt2img(
