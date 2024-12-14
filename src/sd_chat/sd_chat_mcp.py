@@ -84,9 +84,9 @@ Return value:
                 checkpoint_settings = CheckPointSettings(**checkpoint_value)
     lora_settings = []
     for lora_name in lora_names:
-        for lora_item_name, lora_setting_dict in settings_dict['checkpoints'][checkpoint_name]['loras'].items():
-            if lora_item_name == lora_name or lora_setting_dict['name'] == lora_name:
-                lora_settings.append(LoraSettings(**lora_setting_dict))
+        for lora_item_name, lora_setting_dict in checkpoint_settings.loras.items():
+            if lora_item_name == lora_name or lora_setting_dict.name == lora_name:
+                lora_settings.append(lora_setting_dict)
     path = await sd_api.txt2img(prompt, checkpoint_settings, lora_settings)
     url = f'http://localhost:{http_port}/{str(Path(path).relative_to(Path(save_path).resolve())).replace('\\', '/')}'
     return f'![Generation Result]({url})'
