@@ -27,12 +27,6 @@ class SDAPI_WebUIClient:
                 steps=checkpoint_settings.steps,
                 width=checkpoint_settings.width,
                 height=checkpoint_settings.height,
-                enable_hr=checkpoint_settings.enable_hr,
-                hr_upscaler=checkpoint_settings.hr_upscaler,
-                hr_second_pass_steps=checkpoint_settings.hr_second_pass_steps,
-                hr_resize_x=checkpoint_settings.hr_resize_x,
-                hr_resize_y=checkpoint_settings.hr_resize_y,
-                denoising_strength=checkpoint_settings.denoising_strength,
                 use_async=True,
             )
             if self.save_dir_path is None:
