@@ -1,4 +1,4 @@
-from .sd_chat import main
+from .sd_chat_mcp import main
 
 
 if __name__ == "__main__":

@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-sd-chat = "sd_chat:main"
+sd-chat-mcp = "sd_chat:main"
 
 [build-system]
 requires = ["hatchling"]
