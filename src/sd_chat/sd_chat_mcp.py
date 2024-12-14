@@ -1,7 +1,7 @@
 from pathlib import Path
 import http.server
 import socketserver
-import threading
+import _thread as thread
 import json
 from typing import List, Dict
 from fastmcp import FastMCP, Image
@@ -84,8 +84,7 @@ def http_server_start():
             http_port += 1
 
 def main():
-    http_thread = threading.Thread(target=http_server_start)
-    http_thread.start()
+    thread.start_new_thread(http_server_start, ())
 
     mcp.run()
 
