@@ -14,9 +14,17 @@ class SDAPI_WebUIClient:
 
     async def txt2img(self, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
         with redirect_stdout(sys.stderr):
-            if not checkpoint_settings.name in self.api.util_get_current_model():
+            prev_options = self.api.get_options()
+            changed_options = {}
+            if checkpoint_settings.clip_skip != prev_options['CLIP_stop_at_last_layers']:
+                changed_options['CLIP_stop_at_last_layers'] = prev_options['CLIP_stop_at_last_layers']
+                self.api.set_options({'CLIP_stop_at_last_layers': checkpoint_settings.clip_skip})
+            if not checkpoint_settings.name in prev_options['sd_model_checkpoint']:
+                changed_options['sd_model_checkpoint'] = prev_options['sd_model_checkpoint']
                 self.api.util_set_model(checkpoint_settings.name)
+            if len(changed_options.items()) > 0:
                 self.api.util_wait_for_ready()
+
             lora_prompt = ''
             for lora_settings_item in lora_settings:
                 lora_prompt += f', <lora:{lora_settings_item.name}:{lora_settings_item.weight}>'
@@ -30,6 +38,10 @@ class SDAPI_WebUIClient:
                 height=checkpoint_settings.height,
                 use_async=True,
             )
+
+            if len(changed_options.items()) > 0:
+                self.api.set_options(changed_options)
+
             if self.save_dir_path is None:
                 self.save_dir_path = "sd_chat"
             os.makedirs(os.path.join(self.save_dir_path, "txt2img"), exist_ok=True)

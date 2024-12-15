@@ -17,4 +17,5 @@ class CheckPointSettings(BaseModel):
     steps: int = 20
     width: int = 512
     height: int = 512
+    clip_skip: int = 1
     loras: Dict[str, LoraSettings] = {}
