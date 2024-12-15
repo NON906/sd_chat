@@ -1,5 +1,6 @@
 import os
 import sys
+import datetime
 import webuiapi
 from contextlib import redirect_stdout
 from PIL import PngImagePlugin
@@ -14,6 +15,8 @@ class SDAPI_WebUIClient:
 
     async def txt2img(self, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
         with redirect_stdout(sys.stderr):
+            now_str = datetime.datetime.now().strftime('%Y-%m-%d')
+
             prev_options = self.api.get_options()
             changed_options = {}
             if checkpoint_settings.clip_skip != prev_options['CLIP_stop_at_last_layers']:
@@ -44,12 +47,11 @@ class SDAPI_WebUIClient:
 
             if self.save_dir_path is None:
                 self.save_dir_path = "sd_chat"
-            os.makedirs(os.path.join(self.save_dir_path, "txt2img"), exist_ok=True)
-            index = 0
-            save_path = os.path.join(self.save_dir_path, "txt2img", f'{index:08}.png')
-            while os.path.exists(save_path):
-                index += 1
-                save_path = os.path.join(self.save_dir_path, "txt2img", f'{index:08}.png')
+            dir_path = os.path.join(self.save_dir_path, "txt2img", now_str)
+            os.makedirs(dir_path, exist_ok=True)
+            index = len([name for name in os.listdir(dir_path) if os.path.isfile(os.path.join(dir_path, name))])
+            seed = result.info['seed']
+            save_path = os.path.join(self.save_dir_path, "txt2img", now_str, f'{index:05}_{seed}.png')
 
             metadata = PngImagePlugin.PngInfo()
             metadata.add_text('parameters', result.info['infotexts'][0])

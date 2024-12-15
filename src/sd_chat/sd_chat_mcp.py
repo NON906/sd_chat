@@ -59,11 +59,12 @@ async def txt2img(prompt: str, checkpoint_name: str, lora_names: List[str] = [])
     """Generate image with Stable Diffusion.
 Prompt to specify is comma separated keywords.
 If it is not in English, please translate it into English (lang:en).
+Don't use escape characters.
 For example, if you want to output "a school girl wearing a red ribbon", it would be as follows.
     1girl, school uniform, red ribbon
 
 Args:
-    prompt: The prompt to generate the image. If it is not in English, please translate it into English (lang:en).
+    prompt: The prompt to generate the image. If it is not in English, please translate it into English (lang:en). Don't use escape characters.
     checkpoint_name: Checkpoint name to use.
     lora_names: List of Lora names to use. Leave blank if not used.
 Return value:
