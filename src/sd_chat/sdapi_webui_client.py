@@ -2,6 +2,7 @@ import os
 import sys
 import webuiapi
 from contextlib import redirect_stdout
+from PIL import PngImagePlugin
 
 from .settings import CheckPointSettings, LoraSettings
 
@@ -37,5 +38,10 @@ class SDAPI_WebUIClient:
             while os.path.exists(save_path):
                 index += 1
                 save_path = os.path.join(self.save_dir_path, "txt2img", f'{index:08}.png')
-            result.image.save(save_path)
+
+            metadata = PngImagePlugin.PngInfo()
+            metadata.add_text('parameters', result.info['infotexts'][0])
+
+            result.image.save(save_path, pnginfo=metadata)
+
             return os.path.abspath(save_path)
