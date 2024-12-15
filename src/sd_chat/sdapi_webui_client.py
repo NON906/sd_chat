@@ -1,19 +1,19 @@
 import os
+import sys
 import webuiapi
 from contextlib import redirect_stdout
-import io
 
 from .settings import CheckPointSettings, LoraSettings
 
 class SDAPI_WebUIClient:
     def __init__(self, save_dir_path: str | None = None):
-        with redirect_stdout(open(os.devnull, 'w')):
+        with redirect_stdout(sys.stderr):
             self.api = webuiapi.WebUIApi()
             self.save_dir_path = save_dir_path
 
     async def txt2img(self, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
-        with redirect_stdout(open(os.devnull, 'w')):
-            if checkpoint_settings.name in self.api.util_get_current_model():
+        with redirect_stdout(sys.stderr):
+            if not checkpoint_settings.name in self.api.util_get_current_model():
                 self.api.util_set_model(checkpoint_settings.name)
                 self.api.util_wait_for_ready()
             lora_prompt = ''

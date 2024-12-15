@@ -1,10 +1,8 @@
 from pathlib import Path
-import http.server
-import socketserver
-import _thread as thread
+import subprocess
 import json
 from typing import List, Dict
-from fastmcp import FastMCP, Image
+from fastmcp import FastMCP
 
 from .sdapi_webui_client import SDAPI_WebUIClient
 from .settings import CheckPointSettings, LoraSettings
@@ -21,9 +19,6 @@ if settings_dict['target_api'] == 'webui_client':
     sd_api = SDAPI_WebUIClient(save_dir_path=save_path)
 
 http_port = 50080
-class Handler(http.server.SimpleHTTPRequestHandler):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, directory=save_path, **kwargs)
 
 @mcp.tool()
 async def get_models_list() -> dict:
@@ -68,12 +63,16 @@ For example, if you want to output "a school girl wearing a red ribbon", it woul
     1girl, school uniform, red ribbon
 
 Args:
-    prompt: The prompt to generate the image.
+    prompt: The prompt to generate the image. If it is not in English, please translate it into English (lang:en).
     checkpoint_name: Checkpoint name to use.
     lora_names: List of Lora names to use. Leave blank if not used.
 Return value:
-    Generated image markdown tag.
+    Generated image's markdown tag.
 """
+    if type(lora_names) is str:
+        lora_names = [lora_names, ]
+    elif type(lora_names) is not list:
+        lora_names = []
     with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
         settings_dict = json.load(f)
     if checkpoint_name in settings_dict['checkpoints']:
@@ -91,21 +90,9 @@ Return value:
     url = f'http://localhost:{http_port}/{str(Path(path).relative_to(Path(save_path).resolve())).replace('\\', '/')}'
     return f'![Generation Result]({url})'
 
-def http_server_start():
-    global http_port
-    is_oserror = True
-    while is_oserror:
-        is_oserror = False
-        try:
-            with socketserver.TCPServer(("", http_port), Handler) as httpd:
-                httpd.serve_forever()
-        except OSError:
-            is_oserror = True
-            http_port += 1
+subprocess.Popen(['python', '-m', 'http.server', str(http_port), '-d', save_path])
 
 def main():
-    thread.start_new_thread(http_server_start, ())
-
     mcp.run()
 
 if __name__ == "__main__":
