@@ -16,7 +16,10 @@ save_path = settings_dict['save_path']
 mcp = FastMCP("Stable Diffusion MCP Server")
 
 if settings_dict['target_api'] == 'webui_client':
-    sd_api = SDAPI_WebUIClient(save_dir_path=save_path)
+    if 'apis' in settings_dict and 'webui_client' in settings_dict['apis']:
+        sd_api = SDAPI_WebUIClient(save_dir_path=save_path, settings=settings_dict['apis']['webui_client'])
+    else:
+        sd_api = SDAPI_WebUIClient(save_dir_path=save_path)
 
 http_port = 50080
 

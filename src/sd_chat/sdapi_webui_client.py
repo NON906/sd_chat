@@ -8,9 +8,12 @@ from PIL import PngImagePlugin
 from .settings import CheckPointSettings, LoraSettings
 
 class SDAPI_WebUIClient:
-    def __init__(self, save_dir_path: str | None = None):
+    def __init__(self, save_dir_path: str | None = None, settings: dict | None = None):
         with redirect_stdout(sys.stderr):
-            self.api = webuiapi.WebUIApi()
+            if settings is None:
+                self.api = webuiapi.WebUIApi()
+            else:
+                self.api = webuiapi.WebUIApi(host=settings['host'], port=settings['port'])
             self.save_dir_path = save_dir_path
 
     async def txt2img(self, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
