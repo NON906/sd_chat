@@ -1,6 +1,9 @@
 import os
 import sys
 import datetime
+import uuid
+import asyncio
+import threading
 import webuiapi
 from contextlib import redirect_stdout
 from PIL import PngImagePlugin
@@ -8,6 +11,9 @@ from PIL import PngImagePlugin
 from .settings import CheckPointSettings, LoraSettings
 
 class SDAPI_WebUIClient:
+    image_threads = {}
+    image_results = {}
+
     def __init__(self, save_dir_path: str | None = None, settings: dict | None = None):
         with redirect_stdout(sys.stderr):
             if settings is None:
@@ -16,7 +22,7 @@ class SDAPI_WebUIClient:
                 self.api = webuiapi.WebUIApi(host=settings['host'], port=settings['port'])
             self.save_dir_path = save_dir_path
 
-    async def txt2img(self, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
+    def __txt2img(self, image_id: str, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
         with redirect_stdout(sys.stderr):
             now_str = datetime.datetime.now().strftime('%Y-%m-%d')
 
@@ -34,7 +40,8 @@ class SDAPI_WebUIClient:
             lora_prompt = ''
             for lora_settings_item in lora_settings:
                 lora_prompt += f', <lora:{lora_settings_item.name}:{lora_settings_item.weight}>'
-            result = await self.api.txt2img(
+
+            result = self.api.txt2img(
                 prompt=prompt + ", " + checkpoint_settings.prompt + lora_prompt,
                 negative_prompt=checkpoint_settings.negative_prompt,
                 cfg_scale=checkpoint_settings.cfg_scale,
@@ -42,7 +49,6 @@ class SDAPI_WebUIClient:
                 steps=checkpoint_settings.steps,
                 width=checkpoint_settings.width,
                 height=checkpoint_settings.height,
-                use_async=True,
             )
 
             if len(changed_options.items()) > 0:
@@ -61,4 +67,17 @@ class SDAPI_WebUIClient:
 
             result.image.save(save_path, pnginfo=metadata)
 
-            return os.path.abspath(save_path)
+            self.image_results[image_id] = os.path.abspath(save_path)
+
+    def start_txt2img(self, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
+        with redirect_stdout(sys.stderr):
+            image_id = str(uuid.uuid4())
+            self.image_threads[image_id] = threading.Thread(target=self.__txt2img, args=(image_id, prompt, checkpoint_settings, lora_settings))
+            self.image_threads[image_id].start()
+            return image_id
+
+    async def get_result(self, image_id):
+        with redirect_stdout(sys.stderr):
+            while not image_id in self.image_results:
+                await asyncio.sleep(0.01)
+            return self.image_results[image_id]

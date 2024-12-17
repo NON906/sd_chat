@@ -1,8 +1,13 @@
 from pathlib import Path
-import subprocess
+import threading
 import json
 from typing import List, Dict
+import sys
+from contextlib import redirect_stdout
 from fastmcp import FastMCP
+import uvicorn
+from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 from .sdapi_webui_client import SDAPI_WebUIClient
 from .settings import CheckPointSettings, LoraSettings
@@ -22,6 +27,8 @@ if settings_dict['target_api'] == 'webui_client':
         sd_api = SDAPI_WebUIClient(save_dir_path=save_path)
 
 http_port = 50080
+
+http_app = FastAPI()
 
 @mcp.tool()
 async def get_models_list() -> dict:
@@ -92,13 +99,22 @@ Return value:
         for lora_item_name, lora_setting_dict in checkpoint_settings.loras.items():
             if lora_item_name == lora_name or lora_setting_dict.name == lora_name:
                 lora_settings.append(lora_setting_dict)
-    path = await sd_api.txt2img(prompt, checkpoint_settings, lora_settings)
-    url = f'http://localhost:{http_port}/{str(Path(path).relative_to(Path(save_path).resolve())).replace('\\', '/')}'
+    image_id = sd_api.start_txt2img(prompt, checkpoint_settings, lora_settings)
+    url = f'http://localhost:{http_port}/get_result/{image_id}'
     return f'![Generation Result]({url})'
 
-subprocess.Popen(['python', '-m', 'http.server', str(http_port), '-d', save_path])
+@http_app.get("/get_result/{image_id}")
+async def get_result(image_id: str):
+    result_path = await sd_api.get_result(image_id)
+    return FileResponse(result_path)
+
+def uvicorn_thread_func():
+    uvicorn.run(http_app, host="0.0.0.0", port=http_port)
 
 def main():
+    with redirect_stdout(sys.stderr):
+        uvicorn_thread = threading.Thread(target=uvicorn_thread_func)
+        uvicorn_thread.start()
     mcp.run()
 
 if __name__ == "__main__":
