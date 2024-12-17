@@ -78,6 +78,8 @@ class SDAPI_WebUIClient:
 
     async def get_result(self, image_id):
         with redirect_stdout(sys.stderr):
+            if not image_id in self.image_threads:
+                return None
             while not image_id in self.image_results:
                 await asyncio.sleep(0.01)
             return self.image_results[image_id]

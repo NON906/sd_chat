@@ -6,7 +6,7 @@ import sys
 from contextlib import redirect_stdout
 from fastmcp import FastMCP
 import uvicorn
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
 from .sdapi_webui_client import SDAPI_WebUIClient
@@ -105,11 +105,24 @@ Return value:
 
 @http_app.get("/get_result/{image_id}")
 async def get_result(image_id: str):
+    json_file_name = get_path_settings_file('images.json')
+    if json_file_name is not None:
+        with open(json_file_name, 'r', encoding="utf-8") as f:
+            images_dict = json.load(f)
+        if image_id in images_dict:
+            return FileResponse(images_dict[image_id])
+    else:
+        images_dict = {}
     result_path = await sd_api.get_result(image_id)
+    if result_path is None:
+        raise HTTPException(status_code=404, detail="Image not found")
+    images_dict[image_id] = result_path
+    with open(get_path_settings_file('images.json', new_file=True), 'w', encoding="utf-8") as f:
+        json.dump(images_dict, f)
     return FileResponse(result_path)
 
 def uvicorn_thread_func():
-    uvicorn.run(http_app, host="0.0.0.0", port=http_port)
+    uvicorn.run(http_app, host="0.0.0.0", port=http_port, log_level='error')
 
 def main():
     with redirect_stdout(sys.stderr):
