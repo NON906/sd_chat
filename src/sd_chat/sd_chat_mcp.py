@@ -86,7 +86,7 @@ Return value:
     return await civitai_api.get_model_info(version_id)
 
 @mcp.tool()
-async def civitai_install_model(version_id: int, caption: str, base_model_name: str = None, weight: float = 1.0) -> str:
+async def civitai_install_model(version_id: int, caption: str, base_model_name: str = None, weight: float = 1.0) -> str | None:
     """Install model from version_id.
 
 Args:
@@ -96,6 +96,7 @@ Args:
     weight: If the model is Lora, weight to apply. Please obtain it from the contents of "civitai_get_model_info".
 Return value:
     ID to check if downloading.
+    If None, this ended with an error.
 """
     with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
         settings_dict = json.load(f)
