@@ -78,19 +78,30 @@ class CivitaiAPI():
             async with aiohttp.ClientSession(headers=headers) as session:
                 async with session.get(self.version_dict[str(version_id)]['downloadUrl']) as response:
                     download_data = await response.read()
-            if 'models_path' in settings_dict:
-                if self.version_dict[str(version_id)]['model']['type'] == 'Checkpoint':
-                    download_write_path = os.path.join(settings_dict['models_path'], 'StableDiffusion')
-                elif self.version_dict[str(version_id)]['model']['type'] == 'LORA':
-                    download_write_path = os.path.join(settings_dict['models_path'], 'Lora')
-            else:
-                if self.version_dict[str(version_id)]['model']['type'] == 'Checkpoint':
+            
+            if self.version_dict[str(version_id)]['model']['type'] == 'Checkpoint':
+                if 'checkpoints_path' in settings_dict:
+                    download_write_path = settings_dict['checkpoints_path']
+                else:
                     download_write_path = os.path.join(settings_dict['save_path'], 'models', 'StableDiffusion')
-                elif self.version_dict[str(version_id)]['model']['type'] == 'LORA':
+            elif self.version_dict[str(version_id)]['model']['type'] == 'LORA':
+                if 'lora_path' in settings_dict:
+                    download_write_path = settings_dict['lora_path']
+                else:
                     download_write_path = os.path.join(settings_dict['save_path'], 'models', 'Lora')
             os.makedirs(download_write_path, exist_ok=True)
+            
             file_name = self.version_dict[str(version_id)]['files'][0]['name']
-            with open(os.path.join(download_write_path, file_name), 'wb') as f:
+            file_full_path = os.path.join(download_write_path, file_name)
+            if os.path.isfile(file_full_path):
+                file_index = 0
+                while os.path.isfile(file_full_path):
+                    base_file_name, ext = os.path.splitext(self.version_dict[str(version_id)]['files'][0]['name'])
+                    file_name = f'{base_file_name}_{file_index}{ext}'
+                    file_full_path = os.path.join(download_write_path, file_name)
+                    file_index += 1
+
+            with open(file_full_path, 'wb') as f:
                 f.write(download_data)
 
             with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
