@@ -71,6 +71,55 @@ Return value:
     return await civitai_api.get_model_versions(model_id)
 
 @mcp.tool()
+async def civitai_get_model_info(version_id: int) -> dict:
+    """Get model information from version_id.
+
+Args:
+    version_id: Model's version id.
+Return value:
+    model_name: Model name.
+    model_description: Model description.
+    version_name: Version name.
+    version_description: Version description (if exists).
+    type: The model type.
+"""
+    return await civitai_api.get_model_info(version_id)
+
+@mcp.tool()
+async def civitai_install_model(version_id: int, caption: str, base_model_name: str = None, weight: float = 1.0) -> str:
+    """Install model from version_id.
+
+Args:
+    version_id: Model's version id.
+    caption: Short description of the model. Please summarize the content in "civitai_get_model_info".
+    base_model_name: If the model is Lora, name of the base Checkpoint. Please specify one of "get_models_list".
+    weight: If the model is Lora, weight to apply. Please obtain it from the contents of "civitai_get_model_info".
+Return value:
+    ID to check if downloading.
+"""
+    with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
+        settings_dict = json.load(f)
+    if base_model_name in settings_dict['checkpoints']:
+        name = base_model_name
+    else:
+        for checkpoint_key, checkpoint_value in settings_dict['checkpoints'].items():
+            if checkpoint_value['name'] == base_model_name:
+                name = checkpoint_key
+
+    return await civitai_api.install_model(version_id, caption, name, weight)
+
+@mcp.tool()
+async def civitai_download_status(download_id: str) -> str:
+    """Check if downloading.
+
+Args:
+    download_id: ID on "civitai_install_model".
+Return value:
+    'Downloading.' or 'Finished.' or 'Nothing.'
+"""
+    return civitai_api.download_status(download_id)
+
+@mcp.tool()
 async def get_models_list() -> dict:
     """List of Checkpoints and Loras used for image generation.
     
