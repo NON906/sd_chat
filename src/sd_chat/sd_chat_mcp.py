@@ -4,6 +4,7 @@ import json
 from typing import List, Dict
 import sys
 from contextlib import redirect_stdout
+import re
 from fastmcp import FastMCP
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -12,6 +13,7 @@ from fastapi.responses import FileResponse
 from .sdapi_webui_client import SDAPI_WebUIClient
 from .settings import CheckPointSettings, LoraSettings
 from .util import get_path_settings_file
+from .civitai import CivitaiAPI
 
 with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
     settings_dict = json.load(f)
@@ -29,6 +31,44 @@ if settings_dict['target_api'] == 'webui_client':
 http_port = 50080
 
 http_app = FastAPI()
+
+civitai_api = CivitaiAPI()
+
+@mcp.tool()
+async def civitai_url_to_id(url: str) -> dict:
+    """Get model id and version id from url.
+
+Args:
+    url: URL starting with "https://civitai.com/models/".
+Return value:
+    model_id: Model's id.
+    version_id: Version's id. (Only if this can get it)
+"""
+    if '?modelVersionId=' in url:
+        ret_id = re.findall(r'https://civitai.com/models/(\d+)\?modelVersionId=(\d+)', url)
+        return {
+            'model_id': int(ret_id[0][0]),
+            'version_id': int(ret_id[0][1])
+        }
+    else:
+        ret_id = re.findall(r'https://civitai.com/models/(\d+).*', url)
+        return {
+            'model_id': int(ret_id[0])
+        }
+
+@mcp.tool()
+async def civitai_get_versions(model_id: int) -> list:
+    """List of versions of the specified model.
+
+Args:
+    model_id: Model's id.
+Return value:
+    The following item's list.
+        version_id: Version's id.
+        name: Version's name.
+        description: Version's description.
+"""
+    return await civitai_api.get_model_versions(model_id)
 
 @mcp.tool()
 async def get_models_list() -> dict:
@@ -121,14 +161,17 @@ async def get_result(image_id: str):
         json.dump(images_dict, f)
     return FileResponse(result_path)
 
+def mcp_thread_func():
+    mcp.run()
+
 def uvicorn_thread_func():
     uvicorn.run(http_app, host="0.0.0.0", port=http_port, log_level='error')
 
 def main():
     with redirect_stdout(sys.stderr):
-        uvicorn_thread = threading.Thread(target=uvicorn_thread_func)
-        uvicorn_thread.start()
-    mcp.run()
+        run_thread = threading.Thread(target=uvicorn_thread_func)
+        run_thread.start()
+    mcp_thread_func()
 
 if __name__ == "__main__":
     main()
