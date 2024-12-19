@@ -125,7 +125,7 @@ Return value:
             if checkpoint_value['name'] == checkpoint_name:
                 name = checkpoint_key
 
-    return await civitai_api.install_model(version_id, caption, name, weight)
+    return await civitai_api.install_model(await sd_api.get_checkpoints_dir_path(), await sd_api.get_loras_dir_path(), version_id, caption, name, weight)
 
 @mcp.tool()
 async def civitai_download_status(download_id: str) -> str:

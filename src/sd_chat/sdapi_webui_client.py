@@ -7,6 +7,7 @@ import threading
 import webuiapi
 from contextlib import redirect_stdout
 from PIL import PngImagePlugin
+import aiohttp
 
 from .settings import CheckPointSettings, LoraSettings
 
@@ -18,9 +19,29 @@ class SDAPI_WebUIClient:
         with redirect_stdout(sys.stderr):
             if settings is None:
                 self.api = webuiapi.WebUIApi()
+                self.url = 'http://127.0.0.1:7860/sdapi/v1'
             else:
                 self.api = webuiapi.WebUIApi(host=settings['host'], port=settings['port'])
+                self.url = f'http://{host}:{port}/sdapi/v1'
             self.save_dir_path = save_dir_path
+
+    async def get_checkpoints_dir_path(self):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(self.url + '/sd-models') as response:
+                    result = await response.json()
+                    return os.path.dirname(result[0]['filename'])
+        except Exception:
+            return None
+            
+    async def get_loras_dir_path(self):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(self.url + '/loras') as response:
+                    result = await response.json()
+                    return os.path.dirname(result[0]['filename'])
+        except Exception:
+            return None
 
     def __txt2img(self, image_id: str, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
         with redirect_stdout(sys.stderr):

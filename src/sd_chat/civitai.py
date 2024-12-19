@@ -63,7 +63,7 @@ class CivitaiAPI():
 
         return ret
 
-    async def install_model(self, version_id: int, caption: str, base_model_name: str = None, weight: float = 1.0):
+    async def install_model(self, checkpoints_path: str | None, loras_path: str | None, version_id: int, caption: str, base_model_name: str = None, weight: float = 1.0):
         if not str(version_id) in self.version_dict:
             self.version_dict[str(version_id)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id}')
 
@@ -86,11 +86,15 @@ class CivitaiAPI():
             if self.version_dict[str(version_id)]['model']['type'] == 'Checkpoint':
                 if 'checkpoints_path' in settings_dict:
                     download_write_path = settings_dict['checkpoints_path']
+                elif checkpoints_path is not None:
+                    download_write_path = checkpoints_path
                 else:
                     download_write_path = os.path.join(settings_dict['save_path'], 'models', 'StableDiffusion')
             elif self.version_dict[str(version_id)]['model']['type'] == 'LORA':
                 if 'lora_path' in settings_dict:
                     download_write_path = settings_dict['lora_path']
+                elif loras_path is not None:
+                    download_write_path = loras_path
                 else:
                     download_write_path = os.path.join(settings_dict['save_path'], 'models', 'Lora')
             os.makedirs(download_write_path, exist_ok=True)
