@@ -1,6 +1,7 @@
 import json
 import os
 import uuid
+import urllib.parse
 import aiohttp
 import asyncio
 
@@ -33,11 +34,13 @@ class CivitaiAPI():
                 ret_dict = {
                     'version_id': version['id'],
                     'name': version['name'],
+                    'base_model': version['baseModel'],
                     'description': version['description'],
                 }
             else:
                 ret_dict = {
                     'version_id': version['id'],
+                    'base_model': version['baseModel'],
                     'name': version['name'],
                 }
             ret_list.append(ret_dict)
@@ -56,6 +59,7 @@ class CivitaiAPI():
         if 'description' in self.version_dict[str(version_id)]:
             ret['version_description'] = self.version_dict[str(version_id)]['description']
         ret['type'] = self.model_dict[model_id]['type']
+        ret['version_base_model'] = self.version_dict[str(version_id)]['baseModel']
 
         return ret
 
@@ -113,6 +117,7 @@ class CivitaiAPI():
                     settings_dict['checkpoints'][name] = {}
                 settings_dict['checkpoints'][name]['name'] = os.path.splitext(file_name)[0]
                 settings_dict['checkpoints'][name]['caption'] = caption
+                settings_dict['checkpoints'][name]['base_model'] = self.version_dict[str(version_id)]['base_model']
             elif self.version_dict[str(version_id)]['model']['type'] == 'LORA':
                 name = self.version_dict[str(version_id)]['model']['name']
                 if not name in settings_dict['checkpoints'][base_model_name]['loras']:
@@ -122,6 +127,7 @@ class CivitaiAPI():
                 settings_dict['checkpoints'][base_model_name]['loras'][name]['trigger_words'] = self.version_dict[str(version_id)]['trainedWords']
                 settings_dict['checkpoints'][base_model_name]['loras'][name]['weight'] = weight
                 settings_dict['checkpoints'][base_model_name]['loras'][name]['caption'] = caption
+                settings_dict['checkpoints'][base_model_name]['loras'][name]['base_model'] = self.version_dict[str(version_id)]['base_model']
 
             with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
                 json.dump(settings_dict, f, indent=2)
@@ -140,3 +146,19 @@ class CivitaiAPI():
             return 'Finished.'
         else:
             return 'Nothing.'
+
+    async def search(self, query: str, page: int = 0):
+        search_results = await civitai_fetch(f'https://civitai.com/api/v1/models?limit=10&page={(page + 1)}&query={urllib.parse.quote(query)}&types=Checkpoint&types=LORA')
+        ret = []
+        for result in search_results['items']:
+            ret_item = {
+                'model_id': result['id'],
+                'name': result['name'],
+                #'description': result['description'],
+                'type': result['type'],
+            }
+            ret.append(ret_item)
+            self.model_dict[str(result['id'])] = result
+            for version in self.model_dict[str(result['id'])]['modelVersions']:
+                self.version_dict[str(version['id'])] = version
+        return ret

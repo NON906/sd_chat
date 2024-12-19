@@ -35,6 +35,22 @@ http_app = FastAPI()
 civitai_api = CivitaiAPI()
 
 @mcp.tool()
+async def civitai_search(query: str, page: int = 0) -> list:
+    """Search Checkpoints and Loras.
+If it doesn't work, try it in English.
+
+Args:
+    query: Keywords to search.
+    page: Index number of page to refer to.
+Return value:
+    The following item's list.
+        model_id: Model's id used by other tools. Please be sure to include it in your reply.
+        name: Model's name.
+        type: 'Checkpoint' or 'LORA'.
+"""
+    return await civitai_api.search(query, page)
+
+@mcp.tool()
 async def civitai_url_to_id(url: str) -> dict:
     """Get model id and version id from url.
 
@@ -66,6 +82,7 @@ Return value:
     The following item's list.
         version_id: Version's id.
         name: Version's name.
+        base_model: Model category. Checkpoint and Lora's base_model must match.
         description: Version's description.
 """
     return await civitai_api.get_model_versions(model_id)
@@ -82,17 +99,18 @@ Return value:
     version_name: Version name.
     version_description: Version description (if exists).
     type: The model type.
+    version_base_model: Version's model category. Checkpoint and Lora's base_model must match.
 """
     return await civitai_api.get_model_info(version_id)
 
 @mcp.tool()
-async def civitai_install_model(version_id: int, caption: str, base_model_name: str = None, weight: float = 1.0) -> str | None:
+async def civitai_install_model(version_id: int, caption: str, checkpoint_name: str = None, weight: float = 1.0) -> str | None:
     """Install model from version_id.
 
 Args:
     version_id: Model's version id.
     caption: Short description of the model. Please summarize the content in "civitai_get_model_info".
-    base_model_name: If the model is Lora, name of the base Checkpoint. Please specify one of "get_models_list".
+    checkpoint_name: If the model is Lora, name of the base Checkpoint. Please specify one of "get_models_list".
     weight: If the model is Lora, weight to apply. Please obtain it from the contents of "civitai_get_model_info".
 Return value:
     ID to check if downloading.
@@ -100,11 +118,11 @@ Return value:
 """
     with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
         settings_dict = json.load(f)
-    if base_model_name in settings_dict['checkpoints']:
-        name = base_model_name
+    if checkpoint_name in settings_dict['checkpoints']:
+        name = checkpoint_name
     else:
         for checkpoint_key, checkpoint_value in settings_dict['checkpoints'].items():
-            if checkpoint_value['name'] == base_model_name:
+            if checkpoint_value['name'] == checkpoint_name:
                 name = checkpoint_key
 
     return await civitai_api.install_model(version_id, caption, name, weight)
@@ -136,6 +154,7 @@ Return value:
                     name: File name.
                     trigger_words: Prompt required for generation with Lora. Make sure to put it in the Prompt unless it's completely different from what you want to generate.
                     caption: Lora's description.
+                    base_model: Model category. Checkpoint and Lora's base_model must match.
 """
     with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
         settings_dict = json.load(f)
@@ -144,6 +163,7 @@ Return value:
         ret[checkpoint_item_name] = {
             'name': checkpoint_setting_dict['name'],
             'caption': checkpoint_setting_dict['caption'],
+            'base_model': checkpoint_setting_dict['base_model'],
         }
         ret[checkpoint_item_name]['loras'] = {}
         for lora_item_name, lora_setting_dict in checkpoint_setting_dict['loras'].items():
@@ -151,6 +171,7 @@ Return value:
                 'name': lora_setting_dict['name'],
                 'trigger_words': lora_setting_dict['trigger_words'],
                 'caption': lora_setting_dict['caption'],
+                'base_model': lora_setting_dict['base_model'],
             }
     return ret
 

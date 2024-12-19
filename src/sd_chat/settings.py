@@ -6,6 +6,7 @@ class LoraSettings(BaseModel):
     trigger_words: List[str] = []
     weight: float = 1.0
     caption: str = ''
+    base_model: str = ''
 
 class CheckPointSettings(BaseModel):
     name: str
@@ -18,4 +19,5 @@ class CheckPointSettings(BaseModel):
     width: int = 512
     height: int = 512
     clip_skip: int = 1
+    base_model: str = ''
     loras: Dict[str, LoraSettings] = {}
