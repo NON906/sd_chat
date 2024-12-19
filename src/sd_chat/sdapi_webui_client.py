@@ -39,7 +39,7 @@ class SDAPI_WebUIClient:
             async with aiohttp.ClientSession() as session:
                 async with session.get(self.url + '/loras') as response:
                     result = await response.json()
-                    return os.path.dirname(result[0]['filename'])
+                    return os.path.dirname(result[0]['path'])
         except Exception:
             return None
 

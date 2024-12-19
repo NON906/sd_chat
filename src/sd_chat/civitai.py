@@ -63,6 +63,36 @@ class CivitaiAPI():
 
         return ret
 
+    def __rewrite_settings(self, version_id: int, base_model_name: str, file_name: str, caption: str, weight: float):
+        with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
+            settings_dict = json.load(f)
+
+        if self.version_dict[str(version_id)]['model']['type'] == 'Checkpoint':
+            name = self.version_dict[str(version_id)]['model']['name']
+            loop = 1
+            while name in settings_dict['checkpoints']:
+                name = f'{self.version_dict[str(version_id)]['model']['name']} ({loop})'
+                loop += 1
+            settings_dict['checkpoints'][name] = {}
+            settings_dict['checkpoints'][name]['name'] = os.path.splitext(file_name)[0]
+            settings_dict['checkpoints'][name]['caption'] = caption
+            settings_dict['checkpoints'][name]['base_model'] = self.version_dict[str(version_id)]['base_model']
+        elif self.version_dict[str(version_id)]['model']['type'] == 'LORA':
+            name = self.version_dict[str(version_id)]['model']['name']
+            loop = 1
+            while name in settings_dict['checkpoints'][base_model_name]['loras']:
+                name = f'{self.version_dict[str(version_id)]['model']['name']} ({loop})'
+                loop += 1
+            settings_dict['checkpoints'][base_model_name]['loras'][name] = {}
+            settings_dict['checkpoints'][base_model_name]['loras'][name]['name'] = os.path.splitext(file_name)[0]
+            settings_dict['checkpoints'][base_model_name]['loras'][name]['trigger_words'] = self.version_dict[str(version_id)]['trainedWords']
+            settings_dict['checkpoints'][base_model_name]['loras'][name]['weight'] = weight
+            settings_dict['checkpoints'][base_model_name]['loras'][name]['caption'] = caption
+            settings_dict['checkpoints'][base_model_name]['loras'][name]['base_model'] = self.version_dict[str(version_id)]['baseModel']
+
+        with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
+            json.dump(settings_dict, f, indent=2)
+
     async def install_model(self, checkpoints_path: str | None, loras_path: str | None, version_id: int, caption: str, base_model_name: str = None, weight: float = 1.0):
         if not str(version_id) in self.version_dict:
             self.version_dict[str(version_id)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id}')
@@ -72,10 +102,25 @@ class CivitaiAPI():
         if self.version_dict[str(version_id)]['model']['type'] == 'LORA' and not base_model_name in settings_dict['checkpoints']:
             return None
 
+        if self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+            if 'checkpoints_path' in settings_dict:
+                download_checkpoints_path = settings_dict['checkpoints_path']
+            elif checkpoints_path is not None:
+                download_checkpoints_path = checkpoints_path
+            else:
+                download_checkpoints_path = os.path.join(settings_dict['save_path'], 'models', 'StableDiffusion')
+            if os.path.isfile(os.path.join(download_checkpoints_path, settings_dict['checkpoints'][base_model_name]['name'] + '.safetensors')):
+                del settings_dict['checkpoints'][base_model_name]['not_installed']
+                with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
+                    json.dump(settings_dict, f, indent=2)
+            else:
+                version_id_base = settings_dict['checkpoints'][base_model_name]['version_id']
+                if not str(version_id_base) in self.version_dict:
+                    self.version_dict[str(version_id_base)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id_base}')
+
         download_id = str(uuid.uuid4())
-        async def download_task():
-            self.download_ids.append(download_id)
-                
+
+        async def download_task_main(version_id: int):
             headers = {}
             if 'civitai_api_key' in settings_dict:
                 headers = {"Authorization": f"Bearer {settings_dict['civitai_api_key']}"}
@@ -99,12 +144,15 @@ class CivitaiAPI():
                     download_write_path = os.path.join(settings_dict['save_path'], 'models', 'Lora')
             os.makedirs(download_write_path, exist_ok=True)
             
-            file_name = self.version_dict[str(version_id)]['files'][0]['name']
+            for file_dict in self.version_dict[str(version_id)]['files']:
+                if file_dict['downloadUrl'] == self.version_dict[str(version_id)]['downloadUrl']:
+                    file_name_default = file_dict['name']
+            file_name = file_name_default
             file_full_path = os.path.join(download_write_path, file_name)
             if os.path.isfile(file_full_path):
                 file_index = 0
                 while os.path.isfile(file_full_path):
-                    base_file_name, ext = os.path.splitext(self.version_dict[str(version_id)]['files'][0]['name'])
+                    base_file_name, ext = os.path.splitext(file_name_default)
                     file_name = f'{base_file_name}_{file_index}{ext}'
                     file_full_path = os.path.join(download_write_path, file_name)
                     file_index += 1
@@ -112,29 +160,23 @@ class CivitaiAPI():
             with open(file_full_path, 'wb') as f:
                 f.write(download_data)
 
-            with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
-                settings_dict = json.load(f)
+            return file_full_path
 
-            if self.version_dict[str(version_id)]['model']['type'] == 'Checkpoint':
-                name = self.version_dict[str(version_id)]['model']['name']
-                if not name in settings_dict['checkpoints']:
-                    settings_dict['checkpoints'][name] = {}
-                settings_dict['checkpoints'][name]['name'] = os.path.splitext(file_name)[0]
-                settings_dict['checkpoints'][name]['caption'] = caption
-                settings_dict['checkpoints'][name]['base_model'] = self.version_dict[str(version_id)]['base_model']
-            elif self.version_dict[str(version_id)]['model']['type'] == 'LORA':
-                name = self.version_dict[str(version_id)]['model']['name']
-                if not name in settings_dict['checkpoints'][base_model_name]['loras']:
-                    settings_dict['checkpoints'][base_model_name]['loras'] = {}
-                settings_dict['checkpoints'][base_model_name]['loras'][name] = {}
-                settings_dict['checkpoints'][base_model_name]['loras'][name]['name'] = os.path.splitext(file_name)[0]
-                settings_dict['checkpoints'][base_model_name]['loras'][name]['trigger_words'] = self.version_dict[str(version_id)]['trainedWords']
-                settings_dict['checkpoints'][base_model_name]['loras'][name]['weight'] = weight
-                settings_dict['checkpoints'][base_model_name]['loras'][name]['caption'] = caption
-                settings_dict['checkpoints'][base_model_name]['loras'][name]['base_model'] = self.version_dict[str(version_id)]['base_model']
+        async def download_task():
+            nonlocal settings_dict
 
-            with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
-                json.dump(settings_dict, f, indent=2)
+            self.download_ids.append(download_id)
+
+            if self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+                await download_task_main(version_id_base)
+                with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
+                    settings_dict = json.load(f)
+                del settings_dict['checkpoints'][base_model_name]['not_installed']
+                with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
+                    json.dump(settings_dict, f, indent=2)
+
+            file_full_path = await download_task_main(version_id)
+            self.__rewrite_settings(version_id, base_model_name, os.path.basename(file_full_path), caption, weight)
 
             self.download_ids.remove(download_id)
             self.finished_ids.append(download_id)
