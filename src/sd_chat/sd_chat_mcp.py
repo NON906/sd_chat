@@ -27,6 +27,17 @@ if settings_dict['target_api'] == 'webui_client':
         sd_api = SDAPI_WebUIClient(save_dir_path=save_path, settings=settings_dict['apis']['webui_client'])
     else:
         sd_api = SDAPI_WebUIClient(save_dir_path=save_path)
+elif settings_dict['target_api'] == 'diffusers':
+    from .sdapi_diffusers import SDAPI_Diffusers
+    if 'checkpoints_path' in settings_dict:
+        checkpoints_dir_path = settings_dict['checkpoints_path']
+    else:
+        checkpoints_dir_path = None
+    if 'lora_path' in settings_dict:
+        loras_dir_path = settings_dict['lora_path']
+    else:
+        loras_dir_path = None
+    sd_api = SDAPI_Diffusers(save_dir_path=save_path, checkpoints_dir_path=checkpoints_dir_path, loras_dir_path=loras_dir_path)
 
 http_port = 50080
 
