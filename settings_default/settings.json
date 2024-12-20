@@ -1,5 +1,5 @@
 {
-  "target_api": "webui_client",
+  "target_api": "diffusers",
   "save_path": "sd_chat",
   "checkpoints": {
     "Animagine XL V3.1": {

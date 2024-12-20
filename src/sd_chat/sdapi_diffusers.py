@@ -131,6 +131,10 @@ class SDAPI_Diffusers:
 
         image.save(save_path)
 
+        del image
+        gc.collect()
+        torch.cuda.empty_cache()
+
         self.image_results[image_id] = os.path.abspath(save_path)
 
     def start_txt2img(self, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
