@@ -36,10 +36,18 @@ civitai_api = CivitaiAPI()
 
 @mcp.tool()
 async def install_default_checkpoint(checkpoint_name: str) -> str:
-    """Install default checkpoint ('Animagine XL V3.1', 'Pony Diffusion V6 XL', 'Illustrious-XL' and 'Anything V5.0').
+    """Install default checkpoint model.
+The targets are as follows.
+
+- Animagine XL V3.1
+- Pony Diffusion V6 XL
+- Illustrious-XL
+- Anything V5.0
+
+Be sure to do this if you install them.
 
 Args:
-    checkpoint_name: Checkpoint name.
+    checkpoint_name: Checkpoint name ('Animagine XL V3.1', 'Pony Diffusion V6 XL', 'Illustrious-XL' or 'Anything V5.0').
 Return value:
     ID to check if downloading.
 """
@@ -56,8 +64,8 @@ Return value:
 
 @mcp.tool()
 async def civitai_search(query: str, page: int = 0) -> list:
-    """Search Checkpoints and Loras.
-If it doesn't work, try it in English.
+    """Search Checkpoints and Loras from civitai.com.
+No need to search for already on the list (get_models_list) and default checkpoint installation ('Animagine XL V3.1', 'Pony Diffusion V6 XL', 'Illustrious-XL' and 'Anything V5.0') (In that case, please use "install_default_checkpoint").
 
 Args:
     query: Keywords to search.
@@ -168,6 +176,8 @@ Return value:
         value: Checkpoint's summary and settings.
             name: File name.
             caption: Checkpoint's description.
+            base_model: Model category. Checkpoint and Lora's base_model must match.
+            installed: This checkpoint is installed.
             loras: The following dict. They are cannot be used with other Checkpoints.
                 key: Lora's name.
                 value: Lora's summary and settings.
@@ -184,6 +194,7 @@ Return value:
             'name': checkpoint_setting_dict['name'],
             'caption': checkpoint_setting_dict['caption'],
             'base_model': checkpoint_setting_dict['base_model'],
+            'installed': not 'not_installed' in checkpoint_setting_dict
         }
         ret[checkpoint_item_name]['loras'] = {}
         for lora_item_name, lora_setting_dict in checkpoint_setting_dict['loras'].items():
