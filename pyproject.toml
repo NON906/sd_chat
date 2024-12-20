@@ -10,6 +10,10 @@ dependencies = [
     "webuiapi>=0.9.16",
     "fastapi>=0.115.6",
     "uvicorn>=0.33.0",
+]
+
+[project.optional-dependencies]
+diffusers = [
     "torch>=2.4.1",
     "torchvision>=0.19.1",
     "diffusers[torch]>=0.31.0",
