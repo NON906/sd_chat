@@ -112,11 +112,11 @@ Return value:
         }
 
 @mcp.tool()
-async def civitai_get_versions(model_id: int) -> list:
+async def civitai_get_versions(id: int) -> list:
     """List of versions of the specified model.
 
 Args:
-    model_id: Model's id.
+    id: Model's id. (model_id)
 Return value:
     The following item's list.
         version_id: Version's id.
@@ -124,7 +124,7 @@ Return value:
         base_model: Model category. Checkpoint and Lora's base_model must match.
         description: Version's description.
 """
-    return await civitai_api.get_model_versions(model_id)
+    return await civitai_api.get_model_versions(id)
 
 @mcp.tool()
 async def civitai_get_model_info(version_id: int) -> dict:
