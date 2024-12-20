@@ -5,10 +5,22 @@ import uuid
 import asyncio
 import threading
 import glob
+import gc
 from contextlib import redirect_stdout
 from PIL import PngImagePlugin
 import aiohttp
-from diffusers import StableDiffusionPipeline, StableDiffusionXLPipeline, EulerAncestralDiscreteScheduler
+from diffusers import (
+    StableDiffusionPipeline,
+    StableDiffusionXLPipeline,
+    EulerAncestralDiscreteScheduler,
+    DPMSolverMultistepScheduler,
+    DPMSolverSinglestepScheduler,
+    KDPM2DiscreteScheduler,
+    KDPM2AncestralDiscreteScheduler,
+    EulerDiscreteScheduler,
+    HeunDiscreteScheduler,
+    LMSDiscreteScheduler,
+)
 import torch
 
 from .settings import CheckPointSettings, LoraSettings
@@ -43,6 +55,8 @@ class SDAPI_Diffusers:
         if self.checkpoint_settings != checkpoint_settings or self.lora_settings != lora_settings:
             if self.pipeline is not None:
                 del self.pipeline
+                gc.collect()
+                torch.cuda.empty_cache()
 
             self.checkpoint_settings = checkpoint_settings
             self.lora_settings = lora_settings
@@ -52,35 +66,33 @@ class SDAPI_Diffusers:
                 if os.path.splitext(target_name)[1] == '.safetensors':
                     file_name = target_name
 
-            # TODO: other scheduler
-            scheduler = None
-            #if checkpoint_settings.sampler_name == 'Euler a':
-            #    scheduler = EulerAncestralDiscreteScheduler()
-
             if checkpoint_settings.base_model == 'SD 1.5':
-                if scheduler is None:
-                    self.pipeline = StableDiffusionPipeline.from_single_file(
-                        file_name,
-                        torch_dtype=torch.float16,
-                    ).to("cuda")
-                else:
-                    self.pipeline = StableDiffusionPipeline.from_single_file(
-                        file_name,
-                        scheduler=scheduler,
-                        torch_dtype=torch.float16,
-                    ).to("cuda")
+                self.pipeline = StableDiffusionPipeline.from_single_file(
+                    file_name,
+                    torch_dtype=torch.float16,
+                ).to("cuda")
             else:
-                if scheduler is None:
-                    self.pipeline = StableDiffusionXLPipeline.from_single_file(
-                        file_name,
-                        torch_dtype=torch.float16,
-                    ).to("cuda")
-                else:
-                    self.pipeline = StableDiffusionXLPipeline.from_single_file(
-                        file_name,
-                        scheduler=scheduler,
-                        torch_dtype=torch.float16,
-                    ).to("cuda")
+                self.pipeline = StableDiffusionXLPipeline.from_single_file(
+                    file_name,
+                    torch_dtype=torch.float16,
+                ).to("cuda")
+
+            if checkpoint_settings.sampler_name == 'Euler a':
+                self.pipeline.scheduler = EulerAncestralDiscreteScheduler.from_config(self.pipeline.scheduler.config)
+            elif checkpoint_settings.sampler_name == 'DPM++ 2M':
+                self.pipeline.scheduler = DPMSolverMultistepScheduler(self.pipeline.scheduler.config)
+            elif checkpoint_settings.sampler_name == 'DPM++ SDE':
+                self.pipeline.scheduler = DPMSolverSinglestepScheduler(self.pipeline.scheduler.config)
+            elif checkpoint_settings.sampler_name == 'DPM2':
+                self.pipeline.scheduler = KDPM2DiscreteScheduler(self.pipeline.scheduler.config)
+            elif checkpoint_settings.sampler_name == 'DPM2 a':
+                self.pipeline.scheduler = KDPM2AncestralDiscreteScheduler(self.pipeline.scheduler.config)
+            elif checkpoint_settings.sampler_name == 'Euler':
+                self.pipeline.scheduler = EulerDiscreteScheduler(self.pipeline.scheduler.config)
+            elif checkpoint_settings.sampler_name == 'Heun':
+                self.pipeline.scheduler = HeunDiscreteScheduler(self.pipeline.scheduler.config)
+            elif checkpoint_settings.sampler_name == 'LMS':
+                self.pipeline.scheduler = LMSDiscreteScheduler(self.pipeline.scheduler.config)
 
             if lora_settings is not None and len(lora_settings) > 0:
                 adapter_names = []
