@@ -5,7 +5,7 @@
     "Animagine XL V3.1": {
       "name": "animagineXLV31_v31",
       "caption": "SDXL model for anime characters.",
-      "negative_prompt": "nsfw, lowres, bad, text, error, fewer, extra, missing, worst quality, jpeg artifacts, low quality, watermark, unfinished, displeasing, oldest, early, chromatic aberration, signature, extra digits, artistic error, username, scan",
+      "negative_prompt": "nsfw, lowres, bad, text, error, fewer, extra, missing, worst quality, jpeg artifacts, low quality, watermark, unfinished, displeasing, oldest, early, chromatic aberration, signature, extra digits, artistic error, username, scan, nude, faked, pussy, penis, uncensored",
       "width": 832,
       "height": 1216,
       "base_model": "SDXL 1.0",
@@ -16,7 +16,7 @@
     "Pony Diffusion V6 XL": {
       "name": "ponyDiffusionV6XL_v6StartWithThisOne",
       "caption": "Pony Diffusion model.",
-      "negative_prompt": "nsfw, flat color, flat shading, retro style, poor quality, bad face, bad fingers, bad anatomy, missing fingers, low res, cropped, signature, watermark, username, artist name, text, logo, logos, card frame, poorly drawn hands, poorly hands",
+      "negative_prompt": "nsfw, flat color, flat shading, retro style, poor quality, bad face, bad fingers, bad anatomy, missing fingers, low res, cropped, signature, watermark, username, artist name, text, logo, logos, card frame, poorly drawn hands, poorly hands, nude, faked, pussy, penis, uncensored",
       "width": 832,
       "height": 1216,
       "clip_skip": 2,
@@ -41,7 +41,7 @@
     "Anything V5.0": {
       "name": "AnythingXL_v50",
       "caption": "SD1.5 model.",
-      "negative_prompt": "nsfw, flat color, flat shading, retro style, poor quality, bad face, bad fingers, bad anatomy, missing fingers, low res, cropped, signature, watermark, username, artist name, text, logo, logos, card frame, poorly drawn hands, poorly hands",
+      "negative_prompt": "nsfw, flat color, flat shading, retro style, poor quality, bad face, bad fingers, bad anatomy, missing fingers, low res, cropped, signature, watermark, username, artist name, text, logo, logos, card frame, poorly drawn hands, poorly hands, nude, faked, pussy, penis, uncensored",
       "base_model": "SD 1.5",
       "not_installed": true,
       "version_id": 30163,

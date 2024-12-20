@@ -20,6 +20,6 @@ class CheckPointSettings(BaseModel):
     height: int = 512
     clip_skip: int = 1
     base_model: str = ''
-    not_installed: str = False
+    not_installed: bool = False
     version_id: int = -1
     loras: Dict[str, LoraSettings] = {}

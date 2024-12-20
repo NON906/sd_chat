@@ -13,6 +13,10 @@ async def civitai_fetch(url):
     headers = {}
     if 'civitai_api_key' in settings_dict:
         headers = {"Authorization": f"Bearer {settings_dict['civitai_api_key']}"}
+    else:
+        civitai_api_key = os.environ.get('CIVITAI_API_KEY')
+        if civitai_api_key is not None:
+            headers = {"Authorization": f"Bearer {civitai_api_key}"}
     async with aiohttp.ClientSession(headers=headers) as session:
         async with session.get(url) as response:
             return await response.json()
@@ -93,16 +97,18 @@ class CivitaiAPI():
         with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
             json.dump(settings_dict, f, indent=2)
 
-    async def install_model(self, checkpoints_path: str | None, loras_path: str | None, version_id: int, caption: str, base_model_name: str = None, weight: float = 1.0):
-        if not str(version_id) in self.version_dict:
-            self.version_dict[str(version_id)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id}')
-
+    async def install_model(self, checkpoints_path: str | None, loras_path: str | None, version_id: int | None, caption: str, base_model_name: str = None, weight: float = 1.0):
         with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
             settings_dict = json.load(f)
-        if self.version_dict[str(version_id)]['model']['type'] == 'LORA' and not base_model_name in settings_dict['checkpoints']:
-            return None
 
-        if self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+        if version_id is not None:
+            if not str(version_id) in self.version_dict:
+                self.version_dict[str(version_id)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id}')
+
+            if self.version_dict[str(version_id)]['model']['type'] == 'LORA' and not base_model_name in settings_dict['checkpoints']:
+                return None
+
+        if version_id is None or self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
             if 'checkpoints_path' in settings_dict:
                 download_checkpoints_path = settings_dict['checkpoints_path']
             elif checkpoints_path is not None:
@@ -110,20 +116,24 @@ class CivitaiAPI():
             else:
                 download_checkpoints_path = os.path.join(settings_dict['save_path'], 'models', 'StableDiffusion')
             if os.path.isfile(os.path.join(download_checkpoints_path, settings_dict['checkpoints'][base_model_name]['name'] + '.safetensors')):
-                del settings_dict['checkpoints'][base_model_name]['not_installed']
-                with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
-                    json.dump(settings_dict, f, indent=2)
-            else:
-                version_id_base = settings_dict['checkpoints'][base_model_name]['version_id']
-                if not str(version_id_base) in self.version_dict:
-                    self.version_dict[str(version_id_base)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id_base}')
+                if 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+                    del settings_dict['checkpoints'][base_model_name]['not_installed']
+                    with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
+                        json.dump(settings_dict, f, indent=2)
 
         download_id = str(uuid.uuid4())
 
         async def download_task_main(version_id: int):
+            with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
+                settings_dict = json.load(f)
+
             headers = {}
             if 'civitai_api_key' in settings_dict:
                 headers = {"Authorization": f"Bearer {settings_dict['civitai_api_key']}"}
+            else:
+                civitai_api_key = os.environ.get('CIVITAI_API_KEY')
+                if civitai_api_key is not None:
+                    headers = {"Authorization": f"Bearer {civitai_api_key}"}
             async with aiohttp.ClientSession(headers=headers) as session:
                 async with session.get(self.version_dict[str(version_id)]['downloadUrl']) as response:
                     download_data = await response.read()
@@ -163,20 +173,26 @@ class CivitaiAPI():
             return file_full_path
 
         async def download_task():
-            nonlocal settings_dict
+            with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
+                settings_dict = json.load(f)
 
             self.download_ids.append(download_id)
 
-            if self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+            if version_id is None or self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+                version_id_base = settings_dict['checkpoints'][base_model_name]['version_id']
+                if not str(version_id_base) in self.version_dict:
+                    self.version_dict[str(version_id_base)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id_base}')
                 await download_task_main(version_id_base)
                 with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
                     settings_dict = json.load(f)
-                del settings_dict['checkpoints'][base_model_name]['not_installed']
-                with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
-                    json.dump(settings_dict, f, indent=2)
+                if 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+                    del settings_dict['checkpoints'][base_model_name]['not_installed']
+                    with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
+                        json.dump(settings_dict, f, indent=2)
 
-            file_full_path = await download_task_main(version_id)
-            self.__rewrite_settings(version_id, base_model_name, os.path.basename(file_full_path), caption, weight)
+            if version_id is not None:
+                file_full_path = await download_task_main(version_id)
+                self.__rewrite_settings(version_id, base_model_name, os.path.basename(file_full_path), caption, weight)
 
             self.download_ids.remove(download_id)
             self.finished_ids.append(download_id)

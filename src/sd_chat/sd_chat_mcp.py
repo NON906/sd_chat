@@ -35,6 +35,26 @@ http_app = FastAPI()
 civitai_api = CivitaiAPI()
 
 @mcp.tool()
+async def install_default_checkpoint(checkpoint_name: str) -> str:
+    """Install default checkpoint ('Animagine XL V3.1', 'Pony Diffusion V6 XL', 'Illustrious-XL' and 'Anything V5.0').
+
+Args:
+    checkpoint_name: Checkpoint name.
+Return value:
+    ID to check if downloading.
+"""
+    with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
+        settings_dict = json.load(f)
+    if checkpoint_name in settings_dict['checkpoints']:
+        name = checkpoint_name
+    else:
+        for checkpoint_key, checkpoint_value in settings_dict['checkpoints'].items():
+            if checkpoint_value['name'] == checkpoint_name:
+                name = checkpoint_key
+    
+    return await civitai_api.install_model(await sd_api.get_checkpoints_dir_path(), None, None, settings_dict['checkpoints'][name]['caption'], checkpoint_name)
+
+@mcp.tool()
 async def civitai_search(query: str, page: int = 0) -> list:
     """Search Checkpoints and Loras.
 If it doesn't work, try it in English.
@@ -191,7 +211,7 @@ Args:
     checkpoint_name: Checkpoint name to use.
     lora_names: List of Lora names to use. Leave blank if not used.
 Return value:
-    Generated image's markdown tag.
+    Generated image's markdown tag or error message.
 """
     if type(lora_names) is str:
         lora_names = [lora_names, ]
@@ -205,6 +225,8 @@ Return value:
         for checkpoint_key, checkpoint_value in settings_dict['checkpoints'].items():
             if checkpoint_value['name'] == checkpoint_name:
                 checkpoint_settings = CheckPointSettings(**checkpoint_value)
+    if checkpoint_settings.not_installed:
+        return f'Error: Checkpoint {checkpoint_name} is not installed. Please install it.'
     lora_settings = []
     for lora_name in lora_names:
         for lora_item_name, lora_setting_dict in checkpoint_settings.loras.items():
