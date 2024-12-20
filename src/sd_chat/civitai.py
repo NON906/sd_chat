@@ -2,6 +2,8 @@ import json
 import os
 import uuid
 import urllib.parse
+import glob
+import hashlib
 import aiohttp
 import asyncio
 
@@ -127,6 +129,22 @@ class CivitaiAPI():
             with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
                 settings_dict = json.load(f)
 
+            for file_dict in self.version_dict[str(version_id)]['files']:
+                if file_dict['downloadUrl'] == self.version_dict[str(version_id)]['downloadUrl']:
+                    file_name_default = file_dict['name']
+                    hash_sha256 = file_dict['hashes']['SHA256']
+
+            if self.version_dict[str(version_id)]['model']['type'] == 'Checkpoint':
+                check_path = checkpoints_path
+            elif self.version_dict[str(version_id)]['model']['type'] == 'LORA':
+                check_path = loras_path
+            already_downloaded_list = glob.glob(os.path.join(check_path, '**', '*'), recursive=True)
+            for already_file in already_downloaded_list:
+                if os.path.isfile(already_file):
+                    with open(already_file, 'rb') as f:
+                        if str(hashlib.sha256(f.read()).hexdigest()).lower() == hash_sha256.lower():
+                            return already_file
+
             headers = {}
             if 'civitai_api_key' in settings_dict:
                 headers = {"Authorization": f"Bearer {settings_dict['civitai_api_key']}"}
@@ -154,9 +172,6 @@ class CivitaiAPI():
                     download_write_path = os.path.join(settings_dict['save_path'], 'models', 'Lora')
             os.makedirs(download_write_path, exist_ok=True)
             
-            for file_dict in self.version_dict[str(version_id)]['files']:
-                if file_dict['downloadUrl'] == self.version_dict[str(version_id)]['downloadUrl']:
-                    file_name_default = file_dict['name']
             file_name = file_name_default
             file_full_path = os.path.join(download_write_path, file_name)
             if os.path.isfile(file_full_path):
@@ -182,13 +197,16 @@ class CivitaiAPI():
                 version_id_base = settings_dict['checkpoints'][base_model_name]['version_id']
                 if not str(version_id_base) in self.version_dict:
                     self.version_dict[str(version_id_base)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id_base}')
-                await download_task_main(version_id_base)
+                file_full_path = await download_task_main(version_id_base)
                 with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
                     settings_dict = json.load(f)
+                processed_file_name = os.path.splitext(os.path.basename(file_full_path))[0]
+                if processed_file_name != settings_dict['checkpoints'][base_model_name]['name']:
+                    settings_dict['checkpoints'][base_model_name]['name'] = processed_file_name
                 if 'not_installed' in settings_dict['checkpoints'][base_model_name]:
                     del settings_dict['checkpoints'][base_model_name]['not_installed']
-                    with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
-                        json.dump(settings_dict, f, indent=2)
+                with open(get_path_settings_file('settings.json', new_file=True), 'w', encoding="utf-8") as f:
+                    json.dump(settings_dict, f, indent=2)
 
             if version_id is not None:
                 file_full_path = await download_task_main(version_id)
