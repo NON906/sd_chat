@@ -20,7 +20,7 @@ with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
 
 save_path = settings_dict['save_path']
 
-mcp = FastMCP("Stable Diffusion MCP Server")
+mcp = FastMCP("sd_chat MCP Server")
 
 if settings_dict['target_api'] == 'webui_client':
     if 'apis' in settings_dict and 'webui_client' in settings_dict['apis']:
