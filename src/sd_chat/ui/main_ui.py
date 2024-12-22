@@ -108,7 +108,11 @@ async def ui_init_models(model):
             settings_dict['checkpoints'][model]['height'] if 'height' in settings_dict['checkpoints'][model] else 512,
             settings_dict['checkpoints'][model]['clip_skip'] if 'clip_skip' in settings_dict['checkpoints'][model] else 1,
             settings_dict['checkpoints'][model]['base_model'] if 'base_model' in settings_dict['checkpoints'][model] else '',
-            gr.update(choices=lora_choices)
+            gr.update(choices=lora_choices, value=''),
+            '',
+            [],
+            1.0,
+            ''
         ]
         return ret
 
@@ -293,6 +297,10 @@ def main_ui(platform='standalone'):
                 models_clip_skip_numberbox,
                 models_base_model_dropdown,
                 loras_dropdown,
+                loras_name_textbox,
+                loras_trigger_words_dropdown,
+                loras_weight_numberbox,
+                loras_caption_textbox,
             ]
         )
 
