@@ -63,6 +63,10 @@ async def ui_init_chat_model_names(chat_api, chat_api_url, chat_api_api_key):
         ret_list.append(model_dict['id'])
     return gr.update(choices=ret_list, value=settings_dict['chat_api_model'] if 'chat_api_model' in settings_dict else '')
 
+async def save_settings(file_path):
+    with open(file_path, 'w', encoding="utf-8") as f:
+        json.dump(settings_dict, f, indent=2)
+
 def main_ui(platform='standalone'):
     global settings_dict
     with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
@@ -155,6 +159,10 @@ def main_ui(platform='standalone'):
                 chat_api_api_key_textbox,
             ],
             outputs=chat_api_model_name_dropdown
+        )
+
+        file_save_btn.click(
+            save_settings, inputs=file_path_textbox
         )
 
     return runner_interface
