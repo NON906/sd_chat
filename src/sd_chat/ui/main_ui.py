@@ -115,6 +115,10 @@ async def ui_init_models(model):
             ''
         ]
         return ret
+    ret = []
+    for _ in range(16):
+        ret.append(gr.update())
+    return ret
 
 async def models_append(model):
     global settings_dict
@@ -132,6 +136,10 @@ async def ui_init_loras(model, lora):
             settings_dict['checkpoints'][model]['loras'][lora]['caption'] if 'caption' in settings_dict['checkpoints'][model]['loras'][lora] else '',
         ]
         return ret
+    ret = []
+    for _ in range(4):
+        ret.append(gr.update())
+    return ret
 
 async def loras_append(model, lora):
     global settings_dict
