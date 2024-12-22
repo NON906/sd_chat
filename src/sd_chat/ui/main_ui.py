@@ -1,5 +1,6 @@
 import os
 import json
+import logging
 import aiohttp
 import gradio as gr
 
@@ -132,6 +133,10 @@ def main():
     runner_interface = main_ui()
     runner_interface.queue()
     runner_interface.launch(server_port=50081)
+
+for handler in logging.root.handlers[:]:
+    logging.root.removeHandler(handler)
+logging.basicConfig(level=logging.WARNING)
 
 if __name__ == '__main__':
     main()
