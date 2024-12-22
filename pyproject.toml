@@ -24,7 +24,7 @@ diffusers = [
 
 [project.scripts]
 sd-chat-mcp = "sd_chat:main"
-sd-chat-ui = "sd_chat_ui:main"
+sd-chat-ui = "sd_chat.ui:main"
 
 [build-system]
 requires = ["hatchling"]
