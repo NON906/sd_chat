@@ -170,6 +170,7 @@ def main_ui(platform='standalone'):
                     image_api_port_numberbox = gr.Number(label='Port', value=7860, visible=False, interactive=True)
                 gr.Markdown(value='## Civitai API Key')
                 civitai_api_key_textbox = gr.Textbox(label='API Key')
+                civitai_disable_tools_checkbox = gr.Checkbox(label='Disable some civitai tools.', value=False) # (Restart required)
                 with gr.Group(visible=False):
                     gr.Markdown(value='## Chat API')
                     chat_api_dropdown = gr.Dropdown(choices=['OpenAI API', 'Other (OpenAI API compatible)'], label='API', interactive=True)
@@ -289,6 +290,12 @@ def main_ui(platform='standalone'):
             settings_dict['civitai_api_key'] = x
         civitai_api_key_textbox.input(
             func, inputs=civitai_api_key_textbox
+        )
+
+        def func(x):
+            settings_dict['disable_civitai_tools'] = x
+        civitai_disable_tools_checkbox.input(
+            func, inputs=civitai_disable_tools_checkbox
         )
 
         models_dropdown.input(

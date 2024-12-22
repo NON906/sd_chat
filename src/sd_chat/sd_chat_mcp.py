@@ -73,9 +73,10 @@ Return value:
     
     return await civitai_api.install_model(await sd_api.get_checkpoints_dir_path(), None, None, settings_dict['checkpoints'][name]['caption'], checkpoint_name)
 
-@mcp.tool()
-async def civitai_search(query: str, page: int = 0) -> list:
-    """Search Checkpoints and Loras from civitai.com.
+if 'disable_civitai_tools' in settings_dict and not settings_dict['disable_civitai_tools']:
+    @mcp.tool()
+    async def civitai_search(query: str, page: int = 0) -> list:
+        """Search Checkpoints and Loras from civitai.com.
 No need to search for already on the list (get_models_list) and default checkpoint installation ('Animagine XL V3.1', 'Pony Diffusion V6 XL', 'Illustrious-XL' and 'Anything V5.0') (In that case, please use "install_default_checkpoint").
 
 Args:
@@ -87,11 +88,11 @@ Return value:
         name: Model's name.
         type: 'Checkpoint' or 'LORA'.
 """
-    return await civitai_api.search(query, page)
+        return await civitai_api.search(query, page)
 
-@mcp.tool()
-async def civitai_url_to_id(url: str) -> dict:
-    """Get model id and version id from url.
+    @mcp.tool()
+    async def civitai_url_to_id(url: str) -> dict:
+        """Get model id and version id from url.
 
 Args:
     url: URL starting with "https://civitai.com/models/".
@@ -99,21 +100,21 @@ Return value:
     model_id: Model's id.
     version_id: Version's id. (Only if this can get it)
 """
-    if '?modelVersionId=' in url:
-        ret_id = re.findall(r'https://civitai.com/models/(\d+)\?modelVersionId=(\d+)', url)
-        return {
-            'model_id': int(ret_id[0][0]),
-            'version_id': int(ret_id[0][1])
-        }
-    else:
-        ret_id = re.findall(r'https://civitai.com/models/(\d+).*', url)
-        return {
-            'model_id': int(ret_id[0])
-        }
+        if '?modelVersionId=' in url:
+            ret_id = re.findall(r'https://civitai.com/models/(\d+)\?modelVersionId=(\d+)', url)
+            return {
+                'model_id': int(ret_id[0][0]),
+                'version_id': int(ret_id[0][1])
+            }
+        else:
+            ret_id = re.findall(r'https://civitai.com/models/(\d+).*', url)
+            return {
+                'model_id': int(ret_id[0])
+            }
 
-@mcp.tool()
-async def civitai_get_versions(id: int) -> list:
-    """List of versions of the specified model.
+    @mcp.tool()
+    async def civitai_get_versions(id: int) -> list:
+        """List of versions of the specified model.
 
 Args:
     id: Model's id. (model_id)
@@ -124,11 +125,11 @@ Return value:
         base_model: Model category. Checkpoint and Lora's base_model must match.
         description: Version's description.
 """
-    return await civitai_api.get_model_versions(id)
+        return await civitai_api.get_model_versions(id)
 
-@mcp.tool()
-async def civitai_get_model_info(version_id: int) -> dict:
-    """Get model information from version_id.
+    @mcp.tool()
+    async def civitai_get_model_info(version_id: int) -> dict:
+        """Get model information from version_id.
 
 Args:
     version_id: Model's version id.
@@ -140,11 +141,11 @@ Return value:
     type: The model type.
     version_base_model: Version's model category. Checkpoint and Lora's base_model must match.
 """
-    return await civitai_api.get_model_info(version_id)
+        return await civitai_api.get_model_info(version_id)
 
-@mcp.tool()
-async def civitai_install_model(version_id: int, caption: str, checkpoint_name: str = None, weight: float = 1.0) -> str | None:
-    """Install model from version_id.
+    @mcp.tool()
+    async def civitai_install_model(version_id: int, caption: str, checkpoint_name: str = None, weight: float = 1.0) -> str | None:
+        """Install model from version_id.
 
 Args:
     version_id: Model's version id.
@@ -155,23 +156,23 @@ Return value:
     ID to check if downloading.
     If None, this ended with an error.
 """
-    with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
-        settings_dict = json.load(f)
-    if checkpoint_name in settings_dict['checkpoints']:
-        name = checkpoint_name
-    else:
-        for checkpoint_key, checkpoint_value in settings_dict['checkpoints'].items():
-            if checkpoint_value['name'] == checkpoint_name:
-                name = checkpoint_key
+        with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
+            settings_dict = json.load(f)
+        if checkpoint_name in settings_dict['checkpoints']:
+            name = checkpoint_name
+        else:
+            for checkpoint_key, checkpoint_value in settings_dict['checkpoints'].items():
+                if checkpoint_value['name'] == checkpoint_name:
+                    name = checkpoint_key
 
-    return await civitai_api.install_model(await sd_api.get_checkpoints_dir_path(), await sd_api.get_loras_dir_path(), version_id, caption, name, weight)
+        return await civitai_api.install_model(await sd_api.get_checkpoints_dir_path(), await sd_api.get_loras_dir_path(), version_id, caption, name, weight)
 
 @mcp.tool()
 async def civitai_download_status(download_id: str) -> str:
     """Check if downloading.
 
 Args:
-    download_id: ID on "civitai_install_model".
+    download_id: ID on "civitai_install_model" or "install_default_checkpoint".
 Return value:
     'Downloading.' or 'Finished.' or 'Nothing.'
 """
