@@ -8,6 +8,11 @@ from ..util import get_path_settings_file
 
 settings_dict = {}
 
+async def reload_settings(file_path):
+    global settings_dict
+    with open(file_path, 'r', encoding="utf-8") as f:
+        settings_dict = json.load(f)
+
 async def ui_init():
     image_api_name = settings_dict['target_api']
     if settings_dict['target_api'] == 'diffusers':
@@ -80,15 +85,17 @@ def main_ui(platform='standalone'):
                     image_api_port_numberbox = gr.Number(label='Port', value=7860, visible=False, interactive=True)
                 gr.Markdown(value='## Civitai API Key')
                 civitai_api_key_textbox = gr.Textbox(label='API Key')
-                gr.Markdown(value='## Chat API')
-                chat_api_dropdown = gr.Dropdown(choices=['OpenAI API', 'Other (OpenAI API compatible)'], label='API', interactive=True)
-                with gr.Row():
-                    chat_api_url_textbox = gr.Textbox(label='URL', visible=False)
-                    chat_api_api_key_textbox = gr.Textbox(label='API Key')
-                    chat_api_model_name_dropdown = gr.Dropdown(label='Model Name', choices=[], allow_custom_value=True, interactive=True)
+                with gr.Group(visible=False):
+                    gr.Markdown(value='## Chat API')
+                    chat_api_dropdown = gr.Dropdown(choices=['OpenAI API', 'Other (OpenAI API compatible)'], label='API', interactive=True)
+                    with gr.Row():
+                        chat_api_url_textbox = gr.Textbox(label='URL', visible=False)
+                        chat_api_api_key_textbox = gr.Textbox(label='API Key')
+                        chat_api_model_name_dropdown = gr.Dropdown(label='Model Name', choices=[], allow_custom_value=True, interactive=True)
                 gr.Markdown(value='## Image Generation Models')
-                download_models_btn = gr.Button(value='Download Default Models')
-                models_auto_settings_btn = gr.Button(value='Auto Settings (NOTE: Use "Chat API")')
+                with gr.Group(visible=False):
+                    download_models_btn = gr.Button(value='Download Default Models')
+                    models_auto_settings_btn = gr.Button(value='Auto Settings (NOTE: Use "Chat API")')
                 gr.Markdown(value='### Checkpoints')
                 models_dropdown = gr.Dropdown(choices=[], value='', label='Models', allow_custom_value=True, interactive=True)
                 models_name_textbox = gr.Textbox(label='Name (File name without extension)')
@@ -107,6 +114,29 @@ def main_ui(platform='standalone'):
                 loras_caption_textbox = gr.Textbox(label='Caption (Description)')
 
         runner_interface.load(ui_init, outputs=[
+            file_path_textbox,
+            image_api_dropdown,
+            image_api_checkpoints_path_textbox,
+            image_api_loras_path_textbox,
+            image_api_host_textbox,
+            image_api_port_numberbox,
+            civitai_api_key_textbox,
+            chat_api_dropdown,
+            chat_api_url_textbox,
+            chat_api_api_key_textbox,
+            models_dropdown,
+        ]).then(
+            ui_init_chat_model_names, inputs=[
+                chat_api_dropdown,
+                chat_api_url_textbox,
+                chat_api_api_key_textbox,
+            ],
+            outputs=chat_api_model_name_dropdown
+        )
+
+        file_load_btn.click(
+            reload_settings, inputs=file_path_textbox
+        ).then(ui_init, outputs=[
             file_path_textbox,
             image_api_dropdown,
             image_api_checkpoints_path_textbox,
