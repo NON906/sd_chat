@@ -10,7 +10,6 @@ import uvicorn
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 
-from .sdapi_webui_client import SDAPI_WebUIClient
 from .settings import CheckPointSettings, LoraSettings
 from .util import get_path_settings_file
 from .civitai import CivitaiAPI
@@ -23,6 +22,7 @@ save_path = settings_dict['save_path']
 mcp = FastMCP("sd_chat MCP Server")
 
 if settings_dict['target_api'] == 'webui_client':
+    from .sdapi_webui_client import SDAPI_WebUIClient
     if 'apis' in settings_dict and 'webui_client' in settings_dict['apis']:
         sd_api = SDAPI_WebUIClient(save_dir_path=save_path, settings=settings_dict['apis']['webui_client'])
     else:
