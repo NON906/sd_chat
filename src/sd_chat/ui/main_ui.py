@@ -67,6 +67,41 @@ async def ui_init_chat_model_names(chat_api, chat_api_url, chat_api_api_key):
 async def save_settings(file_path):
     with open(file_path, 'w', encoding="utf-8") as f:
         json.dump(settings_dict, f, indent=2)
+    top_dir_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..", ".."))
+    if os.name == 'nt':
+        mcp_json = {
+            "mcpServers": {
+                "sd_chat": {
+                    "command": "cmd",
+                    "args": [
+                        "/c",
+                        os.path.join(top_dir_path, ".venv", "Scripts", "activate"),
+                        "&&",
+                        "python",
+                        os.path.join(top_dir_path, "run.py"),
+                        "-f",
+                        os.path.abspath(file_path)
+                    ]
+                }
+            }
+        }
+    else:
+        mcp_json = {
+            "mcpServers": {
+                "sd_chat": {
+                    "command": "source",
+                    "args": [
+                        os.path.join(top_dir_path, ".venv", "bin", "activate"),
+                        "&&",
+                        "python",
+                        os.path.join(top_dir_path, "run.py"),
+                        "-f",
+                        os.path.abspath(file_path)
+                    ]
+                }
+            }
+        }
+    return json.dumps(mcp_json, indent=2)
 
 async def image_api_dropdown_func(image_api_name):
     global settings_dict
@@ -162,6 +197,8 @@ def main_ui(platform='standalone'):
                 with gr.Row():
                     file_save_btn = gr.Button(value='Save', variant='primary')
                     file_load_btn = gr.Button(value='Load')
+                gr.Markdown(value='### MCP Server Template')
+                mcp_code = gr.Code(value='Please save file.', language='json')
                 gr.Markdown(value='## Image Generation API')
                 image_api_dropdown = gr.Dropdown(choices=['Diffusers', 'sdwebuiapi'], label='API', interactive=True)
                 with gr.Row():
@@ -252,7 +289,7 @@ def main_ui(platform='standalone'):
         )
 
         file_save_btn.click(
-            save_settings, inputs=file_path_textbox
+            save_settings, inputs=file_path_textbox, outputs=mcp_code
         )
 
         image_api_dropdown.input(
