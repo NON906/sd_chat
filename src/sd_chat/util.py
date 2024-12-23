@@ -1,6 +1,16 @@
 import os
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--settings_file')
+args = parser.parse_args()
 
 def get_path_settings_file(file_name: str, new_file=False, sd_webui_extensions=False, sd_chat_dir=True):
+    global args
+    if args.settings_file is not None:
+        if os.path.isfile(args.settings_file):
+            return args.settings_file
+            
     ret = os.path.join(os.path.dirname(__file__), '..', '..', 'settings', file_name)
     if os.path.isfile(ret):
         return ret
