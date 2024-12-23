@@ -144,9 +144,9 @@ async def ui_init_loras(model, lora):
 
 async def loras_append(model, lora):
     global settings_dict
-    if 'loras' in settings_dict['checkpoints'][model]:
+    if not 'loras' in settings_dict['checkpoints'][model]:
         settings_dict['checkpoints'][model]['loras'] = {}
-    if lora in settings_dict['checkpoints'][model]['loras']:
+    if not lora in settings_dict['checkpoints'][model]['loras']:
         settings_dict['checkpoints'][model]['loras'][lora] = {}
 
 def main_ui(platform='standalone'):

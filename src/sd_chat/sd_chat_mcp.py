@@ -214,7 +214,6 @@ Return value:
                 'name': lora_setting_dict['name'],
                 'trigger_words': lora_setting_dict['trigger_words'],
                 'caption': lora_setting_dict['caption'],
-                'base_model': lora_setting_dict['base_model'],
             }
     return ret
 
