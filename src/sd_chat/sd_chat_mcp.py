@@ -21,23 +21,30 @@ save_path = settings_dict['save_path']
 
 mcp = FastMCP("sd_chat MCP Server")
 
-if settings_dict['target_api'] == 'webui_client':
-    from .sdapi_webui_client import SDAPI_WebUIClient
-    if 'apis' in settings_dict and 'webui_client' in settings_dict['apis']:
-        sd_api = SDAPI_WebUIClient(save_dir_path=save_path, settings=settings_dict['apis']['webui_client'])
-    else:
-        sd_api = SDAPI_WebUIClient(save_dir_path=save_path)
-elif settings_dict['target_api'] == 'diffusers':
-    from .sdapi_diffusers import SDAPI_Diffusers
-    if 'checkpoints_path' in settings_dict:
-        checkpoints_dir_path = settings_dict['checkpoints_path']
-    else:
-        checkpoints_dir_path = None
-    if 'lora_path' in settings_dict:
-        loras_dir_path = settings_dict['lora_path']
-    else:
-        loras_dir_path = None
-    sd_api = SDAPI_Diffusers(save_dir_path=save_path, checkpoints_dir_path=checkpoints_dir_path, loras_dir_path=loras_dir_path)
+sd_api = None
+def init_sd_api():
+    global sd_api
+    if sd_api is not None:
+        return
+    with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
+        settings_dict = json.load(f)
+    if settings_dict['target_api'] == 'webui_client' or settings_dict['target_api'] == 'sdwebuiapi':
+        from .sdapi_webui_client import SDAPI_WebUIClient
+        if 'apis' in settings_dict and 'webui_client' in settings_dict['apis']:
+            sd_api = SDAPI_WebUIClient(save_dir_path=save_path, settings=settings_dict['apis']['webui_client'])
+        else:
+            sd_api = SDAPI_WebUIClient(save_dir_path=save_path)
+    elif settings_dict['target_api'] == 'diffusers' or settings_dict['target_api'] == 'Diffusers':
+        from .sdapi_diffusers import SDAPI_Diffusers
+        if 'checkpoints_path' in settings_dict:
+            checkpoints_dir_path = settings_dict['checkpoints_path']
+        else:
+            checkpoints_dir_path = None
+        if 'lora_path' in settings_dict:
+            loras_dir_path = settings_dict['lora_path']
+        else:
+            loras_dir_path = None
+        sd_api = SDAPI_Diffusers(save_dir_path=save_path, checkpoints_dir_path=checkpoints_dir_path, loras_dir_path=loras_dir_path)
 
 http_port = 50080
 
@@ -63,6 +70,8 @@ Return value:
     ID to check if downloading.
     If None, this ended with an error.
 """
+    init_sd_api()
+
     with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
         settings_dict = json.load(f)
     if checkpoint_name in settings_dict['checkpoints']:
@@ -74,7 +83,7 @@ Return value:
     
     return await civitai_api.install_model(await sd_api.get_checkpoints_dir_path(), None, None, settings_dict['checkpoints'][name]['caption'], checkpoint_name)
 
-if 'disable_civitai_tools' in settings_dict and not settings_dict['disable_civitai_tools']:
+if not 'disable_civitai_tools' in settings_dict or not settings_dict['disable_civitai_tools']:
     @mcp.tool()
     async def civitai_search(query: str, page: int = 0) -> list:
         """Search Checkpoints and Loras from civitai.com.
@@ -157,6 +166,8 @@ Return value:
     ID to check if downloading.
     If None, this ended with an error.
 """
+        init_sd_api()
+
         with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
             settings_dict = json.load(f)
         if checkpoint_name in settings_dict['checkpoints']:
@@ -240,6 +251,7 @@ Return value:
         lora_names = [lora_names, ]
     elif type(lora_names) is not list:
         lora_names = []
+    init_sd_api()
     with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
         settings_dict = json.load(f)
     if checkpoint_name in settings_dict['checkpoints']:
@@ -261,6 +273,7 @@ Return value:
 
 @http_app.get("/get_result/{image_id}")
 async def get_result(image_id: str):
+    init_sd_api()
     json_file_name = get_path_settings_file('images.json')
     if json_file_name is not None:
         with open(json_file_name, 'r', encoding="utf-8") as f:

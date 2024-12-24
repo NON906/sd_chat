@@ -89,12 +89,12 @@ async def save_settings(file_path):
         mcp_json = {
             "mcpServers": {
                 "sd_chat": {
-                    "command": "source",
+                    "command": "uv",
                     "args": [
-                        os.path.join(top_dir_path, ".venv", "bin", "activate"),
-                        "&&",
-                        "python",
-                        os.path.join(top_dir_path, "run.py"),
+                        "--directory",
+                        top_dir_path,
+                        "run",
+                        "run.py",
                         "-f",
                         os.path.abspath(file_path)
                     ]
