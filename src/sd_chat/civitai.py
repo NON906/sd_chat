@@ -111,10 +111,10 @@ class CivitaiAPI():
             if not str(version_id) in self.version_dict:
                 self.version_dict[str(version_id)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id}')
 
-            if self.version_dict[str(version_id)]['model']['type'] == 'LORA' and not base_model_name in settings_dict['checkpoints']:
+            if 'model' in self.version_dict[str(version_id)] and 'type' in self.version_dict[str(version_id)]['model'] and self.version_dict[str(version_id)]['model']['type'] == 'LORA' and not base_model_name in settings_dict['checkpoints']:
                 return None
 
-        if version_id is None or self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+        if version_id is None or 'model' in self.version_dict[str(version_id)] and 'type' in self.version_dict[str(version_id)]['model'] and self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
             if 'checkpoints_path' in settings_dict:
                 download_checkpoints_path = settings_dict['checkpoints_path']
             elif checkpoints_path is not None:
@@ -197,7 +197,7 @@ class CivitaiAPI():
 
             self.download_ids.append(download_id)
 
-            if version_id is None or self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
+            if version_id is None or 'model' in self.version_dict[str(version_id)] and 'type' in self.version_dict[str(version_id)]['model'] and self.version_dict[str(version_id)]['model']['type'] == 'LORA' and 'not_installed' in settings_dict['checkpoints'][base_model_name]:
                 version_id_base = settings_dict['checkpoints'][base_model_name]['version_id']
                 if not str(version_id_base) in self.version_dict:
                     self.version_dict[str(version_id_base)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id_base}')
