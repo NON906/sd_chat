@@ -148,12 +148,18 @@ async def ui_init_models(model):
             '',
             [],
             1.0,
-            ''
+            '',
         ]
         return ret
     ret = []
-    for _ in range(16):
+    for _ in range(11):
         ret.append(gr.update())
+    ret += [gr.update(choices=[], value=''),
+        '',
+        [],
+        1.0,
+        '',
+    ]
     return ret
 
 async def models_append(model):
