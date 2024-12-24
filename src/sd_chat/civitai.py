@@ -103,6 +103,10 @@ class CivitaiAPI():
         with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
             settings_dict = json.load(f)
 
+        if 'apis' in settings_dict and 'webui_client' in settings_dict['apis'] and 'host' in settings_dict['apis']['webui_client']:
+            if settings_dict['apis']['webui_client']['host'] != 'localhost' and settings_dict['apis']['webui_client']['host'] != '127.0.0.1':
+                return None
+
         if version_id is not None:
             if not str(version_id) in self.version_dict:
                 self.version_dict[str(version_id)] = await civitai_fetch(f'https://civitai.com/api/v1/model-versions/{version_id}')

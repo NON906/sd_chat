@@ -46,7 +46,7 @@ http_app = FastAPI()
 civitai_api = CivitaiAPI()
 
 @mcp.tool()
-async def install_default_checkpoint(checkpoint_name: str) -> str:
+async def install_default_checkpoint(checkpoint_name: str) -> str | None:
     """Install default checkpoint model.
 The targets are as follows.
 
@@ -61,6 +61,7 @@ Args:
     checkpoint_name: Checkpoint name ('Animagine XL V3.1', 'Pony Diffusion V6 XL', 'Illustrious-XL' or 'Anything V5.0').
 Return value:
     ID to check if downloading.
+    If None, this ended with an error.
 """
     with open(get_path_settings_file('settings.json'), 'r', encoding="utf-8") as f:
         settings_dict = json.load(f)
