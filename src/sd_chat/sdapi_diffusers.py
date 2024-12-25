@@ -52,7 +52,7 @@ class SDAPI_Diffusers:
     def __txt2img(self, image_id: str, prompt: str, checkpoint_settings: CheckPointSettings, lora_settings: list):
         now_str = datetime.datetime.now().strftime('%Y-%m-%d')
 
-        if self.checkpoint_settings != checkpoint_settings or self.lora_settings != lora_settings:
+        if self.pipeline is None or self.checkpoint_settings != checkpoint_settings or self.lora_settings != lora_settings:
             if self.pipeline is not None:
                 del self.pipeline
                 gc.collect()
